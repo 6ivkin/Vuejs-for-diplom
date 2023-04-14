@@ -116,7 +116,8 @@
                     <h4>Color Option </h4>
                     <ul class="color-option">
                       <li v-for="color in filterList.colors">
-                        <a @click.prevent="addColor(color.id)" href="#0" class="color-option-single" :style="`background: #${color.title}`">
+                        <a @click.prevent="addColor(color.id)" href="#0" class="color-option-single"
+                           :style="`background: #${color.title}`">
                           <span> {{ color.title }}</span> </a>
                       </li>
                     </ul>
@@ -339,18 +340,39 @@
                   </div>
                 </div>
               </div>
-              <div class="row">
+              <div class="row" v-if="pagination.last_page > 1">
                 <div class="col-12 d-flex justify-content-center wow fadeInUp animated">
                   <ul class="pagination text-center">
-                    <li class="next"><a href="#0"><i class="flaticon-left-arrows"
-                                                     aria-hidden="true"></i> </a></li>
-                    <li><a href="#0">1</a></li>
-                    <li><a href="#0" class="active">2</a></li>
-                    <li><a href="#0">3</a></li>
-                    <li><a href="#0">...</a></li>
-                    <li><a href="#0">10</a></li>
-                    <li class="next"><a href="#0"><i class="flaticon-next-1"
-                                                     aria-hidden="true"></i> </a></li>
+                    <li v-if="pagination.current_page !== 1" class="next">
+                      <a @click.prevent="getProducts(pagination.current_page - 1)" href="#0">
+                        <i class="flaticon-left-arrows" aria-hidden="true"></i>
+                      </a>
+                    </li>
+
+                    <li v-for="link in pagination.links">
+                      <template v-if="Number(link.label) &&
+                       (pagination.current_page - link.label < 2 &&
+                       pagination.current_page - link.label > -2) ||
+                       Number(link.label) === 1 || Number(link.label) === pagination.last_page ">
+                        <a @click.prevent="getProducts(link.label)" :class="link.active ? 'active' : ''"
+                           href="#0">{{ link.label }}</a>
+                      </template>
+
+                      <template v-if="Number(link.label) &&
+                      pagination.current_page !== 3 &&
+                      (pagination.current_page - link.label === 2) ||
+                      Number(link.label) &&
+                      pagination.current_page !== pagination.last_page - 2 &&
+                      (pagination.current_page - link.label === -2) ">
+                        <a>...</a>
+                      </template>
+                    </li>
+
+                    <li v-if="pagination.current_page !== pagination.last_page" class="next">
+                      <a @click.prevent="getProducts(pagination.current_page + 1)" href="#0">
+                        <i class="flaticon-next-1" aria-hidden="true"></i>
+                      </a>
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -381,6 +403,7 @@ export default {
       colors: [],
       tags: [],
       prices: [],
+      pagination: [],
     }
   },
 
@@ -389,19 +412,7 @@ export default {
       let price = $('#priceRange').val()
       this.price = price.replace(/[\s+]|[₽]/g, '').split('-')
 
-      this.axios.post('http://127.0.0.1:8000/api/products', {
-        'categories': this.categories,
-        'colors': this.colors,
-        'tags': this.tags,
-        'prices': this.prices
-      })
-          .then(res => {
-            this.products = res.data.data
-            // console.log(res);
-          })
-          .finally(v => {
-            $(document).trigger('changed')
-          })
+      this.getProducts()
     },
     addColor(id) {
       if (!this.colors.includes(id)) {
@@ -421,13 +432,18 @@ export default {
         })
       }
     },
-    getProducts() {
+    getProducts(page = 1) {
       this.axios.post('http://127.0.0.1:8000/api/products', {
-
+        'categories': this.categories,
+        'colors': this.colors,
+        'tags': this.tags,
+        'prices': this.prices,
+        'page': page
       })
           .then(res => {
             this.products = res.data.data
-            // console.log(res);
+            this.pagination = res.data.meta
+            console.log(res);
           })
           .finally(v => {
             $(document).trigger('changed')

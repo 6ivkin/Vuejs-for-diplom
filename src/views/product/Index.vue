@@ -208,7 +208,8 @@
                               <div class="products-grid-one__badge-box"> <span
                                   class="bg_base badge new ">New</span>
                               </div>
-                              <a href="cart.html" class="addcart btn--primary style2">
+                              <a @click.prevent="addToCart(product.id, true)" href="cart.html"
+                                 class="addcart btn--primary style2">
                                 Add To Cart </a>
                               <div class="products-grid__usefull-links">
                                 <ul>
@@ -301,7 +302,7 @@
                                             <span class="increaseQty"> <i
                                                 class="flaticon-plus"></i>
                                                                                     </span></div>
-                                          <button class="btn--primary "> Add to
+                                          <button @click.prevent="addToCart(product.id)" class="btn--primary "> Add to
                                             Cart
                                           </button>
                                         </div>
@@ -326,7 +327,11 @@
                             <div class="products-three-single-content text-center"><span>{{
                                 product.category.title
                               }}</span>
-                              <h5><a href="shop-details-3.html"> {{ product.title }} </a>
+                              <h5>
+                                <router-link :to="{name: 'products.show', params: {id: product.id}}"> {{
+                                    product.title
+                                  }}
+                                </router-link>
                               </h5>
                               <p>
                                 <!--                                <del>₽49990.00</del>-->
@@ -408,6 +413,35 @@ export default {
   },
 
   methods: {
+    addToCart(id, isSingle) {
+      let qty = isSingle ? 1 : $('.qtyValue').val()
+      let cart = localStorage.getItem('cart')
+      $('.qtyValue').val(1)
+
+      let newProduct = [
+        {
+          'id': id,
+          'qty': qty
+        }
+      ]
+
+      if (!cart) {
+        localStorage.setItem('cart', JSON.stringify(newProduct));
+      } else {
+        cart = JSON.parse(cart)
+        // добавление в карзину одинакового продукта. Увеличение его колличества
+        cart.forEach(productInCart => {
+          if (productInCart.id === id) {
+            productInCart.qty = Number(productInCart.qty) + Number(qty)
+            newProduct = null
+          }
+        })
+
+        Array.prototype.push.apply(cart, newProduct)
+
+        localStorage.setItem('cart', JSON.stringify(cart))
+      }
+    },
     filterProducts() {
       let price = $('#priceRange').val()
       this.price = price.replace(/[\s+]|[₽]/g, '').split('-')
